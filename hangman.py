@@ -38,13 +38,12 @@ class HangmanPlayer:
                 char_input = inputimeout(prompt="\nProvide single character "
                                                 "(in 5 seconds): ", timeout=5)
             except TimeoutOccurred:
-                char_input = ""
+                char_input = None
 
             if len(char_input) == 1:
                 break
             elif len(char_input) == 0:
-                char_input = ""
-                break
+                return char_input
             else:
                 print("Please enter only one character")
 
@@ -123,11 +122,13 @@ class HangmanGame:
         self.guessing_state = "".join([c1 if c1 in self.guessed_chars else "*"
                                        for c1 in self.guessed_word])
 
-    def end_game(self, the_current_player):
-        print("Super!", the_current_player, "- you guessed the word:",
+    def end_game(self, the_player):
+        print("Super!", the_player, "- you guessed the word:",
               self.guessed_word)
-        self.winner = the_current_player
+        self.guessing_state = self.guessed_word
+        self.winner = the_player
         self.round_number += 1
+        self.results[the_player][self.round_number] = self.guessed_word
 
     def run_game(self):
         """Runs Hangman game."""
@@ -157,6 +158,7 @@ class HangmanGame:
                     print("\nUnfortunately you did not guess.\n\n")
 
                 self.round_number += 1
+                self.results[player.name][self.round_number] = guess_try
 
         else:
             print("\nIt is end of Hangman Game number XYZ. "
