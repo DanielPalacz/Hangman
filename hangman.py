@@ -1,11 +1,19 @@
-"""Hangman game implementation.
+"""Hangman game documentation.
 
 Usage:
-    hangman.py -demo   - running Hangman game in Demo mode
+    hangman.py -demo   - run Hangman game in Demo mode
+
+    hangman.py -p John
+    hangman.py --player John
+      - run Hangman game with single player 'John'
+
+    hangman.py -p John -p Tom
+      - run Hangman game with two players 'John' and 'Tom'
 """
 
 from inputimeout import inputimeout, TimeoutOccurred
 import sys
+import argparse
 
 
 class HangmanPlayer:
@@ -18,7 +26,6 @@ class HangmanPlayer:
     def provide_character(self):
         """ ... """
         while True:
-            char_input = ""
             try:
                 char_input = inputimeout(prompt="\nProvide single character "
                                                 "(in 5 seconds): ", timeout=5)
@@ -32,6 +39,7 @@ class HangmanPlayer:
                 break
             else:
                 print("Please enter only one character")
+
         return char_input
 
     def guess_word(self):
@@ -63,7 +71,7 @@ class HangmanGame:
             - dictionary contains appearing the given characters or NULL
     """
 
-    def __init__(self, guessed_word):
+    def __init__(self, guessed_word, *gamers):
         """Initializes HangmanGame object
 
         Args:
@@ -74,6 +82,9 @@ class HangmanGame:
         self.guessed_word = guessed_word
         self.guessing_state = len(guessed_word) * "*"
         self.guessed_chars = {}
+        self.players = [HangmanPlayer(gamer) for gamer in gamers]
+        self.winner = None
+        self.round_number = 0
 
     def __str__(self):
         return "Hello it is __str__ (special method) output of: " \
@@ -83,6 +94,8 @@ class HangmanGame:
         test_table = [1 if c1 not in self.guessed_chars else 0 for c1 in
                       self.guessed_word]
         if sum(test_table) == 0:
+            return True
+        elif self.guessing_state == self.guessed_word:
             return True
         else:
             return False
@@ -101,46 +114,67 @@ class HangmanGame:
         self.guessing_state = "".join([c1 if c1 in self.guessed_chars else "*"
                                        for c1 in self.guessed_word])
 
-    def run_game(self, player: HangmanPlayer) -> None:
-        """Runs game.
+    def run_game(self):
+        """Runs Hangman game.
 
-        More method information...
-        More method information...
+        More information...
         """
+        print("***********************************************************\n")
+        print(*[x.name for x in self.players], "- Hello in Hangman Game!\n\n")
 
-        print("""
-        Hello in Hangman Game!
-        """)
-        print(self.is_finished())
         while not self.is_finished():
-            print("The state of guessing is following:", self.guessing_state)
-            self.update_game_state(player.provide_character())
 
-            if self.is_finished():
-                print("Super! You guessed the word:", self.guessed_word)
-                print("\nIt is end of Hangman Game. Thank You!!!")
-                break
-            print("\nThe state of guessing is following:", self.guessing_state)
+            for player in self.players:
+                if self.is_finished():
+                    break
+                print("\n" + player.name, "- it is your turn.")
+                print("The state of game is following:", self.guessing_state)
 
-            guess_try = player.guess_word()
-            if guess_try == self.guessed_word:
-                print("Hurra you guessed. The word is:", guess_try)
-                self.guessing_state = guess_try
-                break
-            else:
-                print("\nUnfortunately you did not guess.\n\n")
+                self.update_game_state(player.provide_character())
+                if self.is_finished():
+                    print("Super!", player.name, "- you guessed the word:",
+                          self.guessed_word)
+                    self.winner = player.name
+                    break
+                print("\nThe state of guessing is following:",
+                      self.guessing_state)
+
+                guess_try = player.guess_word()
+                if guess_try == self.guessed_word:
+                    print("Hurra", player.name,
+                          "you guessed. The word is:", guess_try)
+                    self.guessing_state = guess_try
+                    self.winner = player.name
+                    break
+                else:
+                    print("\nUnfortunately you did not guess.\n\n")
+
+            self.round_number += 1
+
         else:
-            print("\nIt is end of Hangman Game. Thank You!!!")
+            print("\nIt is end of Hangman Game number XYZ. "
+                  "Thank You!", self.winner, "won in round:", self.round_number)
 
 
 if __name__ == "__main__":
     if len(sys.argv) == 1:
         print(__doc__)
         exit()
-    elif "-demo" in sys.argv:
-        janek = HangmanPlayer("Janek")
-        game = HangmanGame("kot")
-        game.run_game(janek)
+    elif len(sys.argv) == 2 and ("-h" or "--help" in sys.argv):
+        print(__doc__)
+        exit()
+    elif "-demo" in sys.argv and len(sys.argv) == 2:
+        gamers = ["Janek", "Tomek"]
+        game = HangmanGame("kot", *gamers)
+        game.run_game()
         print("\nGame stats:\n", game.guessed_chars)
+        exit()
     else:
-        print("\nThe given way of running Hangman game is not implemented")
+        parser = argparse.ArgumentParser()
+        parser.add_argument("-p", "--player",
+                        action="append",
+                        default=[])
+        args = parser.parse_args()
+        game = HangmanGame("kot", *args.player)
+        game.run_game()
+        print("\nGame stats:\n", game.guessed_chars)
