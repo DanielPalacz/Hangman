@@ -14,6 +14,7 @@ Usage:
 from inputimeout import inputimeout, TimeoutOccurred
 import sys
 import argparse
+from dbsupport import DbInterface as db
 
 
 class HangmanPlayer:
@@ -149,7 +150,7 @@ class HangmanGame:
                     self.end_game(player.name)
                     break
 
-                print("\nThe state of game is following:",self.guessing_state)
+                print("\nThe state of game is following:", self.guessing_state)
                 guess_try = player.guess_word()
                 if guess_try == self.guessed_word:
                     self.end_game(player.name)
@@ -159,10 +160,15 @@ class HangmanGame:
 
                 self.round_number += 1
                 self.results[player.name][self.round_number] = guess_try
+                db.update_db("hangmandb.sqlite",
+                             round_it=self.round_number,
+                             name=player.name,
+                             guess=guess_try,
+                             )
 
         else:
             print("\nIt is end of Hangman Game number XYZ. "
-                  "Thank You!", self.winner, "won in round:", self.round_number)
+                  "Thank You!", self.winner, "won in round", self.round_number)
 
 
 if __name__ == "__main__":
@@ -180,10 +186,11 @@ if __name__ == "__main__":
         exit()
     else:
         parser = argparse.ArgumentParser()
-        parser.add_argument("-p", "--player",
-                        action="append",
-                        default=[])
+        parser.add_argument("-p", "--player", action="append", default=[])
         args = parser.parse_args()
+
+        db.initialise_db("hangmandb.sqlite")
+
         game = HangmanGame("kot", *args.player)
         game.run_game()
         print("\nGame stats:\n", game.guessed_chars)
