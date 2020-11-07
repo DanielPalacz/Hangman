@@ -1,7 +1,11 @@
 """Hangman game documentation.
 
 Usage:
-    hangman.py -demo   - run Hangman game in Demo mode
+    hangman.py -demo
+      - run Hangman game in Demo mode
+
+    hangman.py -history
+      - show all historical results
 
     hangman.py -p John
     hangman.py --player John
