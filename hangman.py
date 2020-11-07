@@ -14,7 +14,7 @@ Usage:
 from inputimeout import inputimeout, TimeoutOccurred
 import sys
 import argparse
-from dbsupport import DbInterface as db
+from dbsupport import GameDbInterface as db
 
 
 class HangmanPlayer:
@@ -128,12 +128,6 @@ class HangmanGame:
         self.winner = the_player
         self.round_number += 1
         self.results[the_player][self.round_number] = self.guessed_word
-        db.update_db("hangmandb.sqlite",
-                     winner=self.winner,
-                     round_it=self.round_number,
-                     name=the_player,
-                     guess=self.guessed_word,
-                     )
 
     def run_game(self):
         """Runs Hangman game."""
@@ -164,15 +158,13 @@ class HangmanGame:
 
                 self.round_number += 1
                 self.results[player.name][self.round_number] = guess_try
-                db.update_db("hangmandb.sqlite",
-                             round_it=self.round_number,
-                             name=player.name,
-                             guess=guess_try,
-                             )
 
         else:
             print("\nIt is end of Hangman Game number XYZ. "
                   "Thank You!", self.winner, "won in round", self.round_number)
+
+    def get_game_stats(self):
+        return self.results
 
 
 if __name__ == "__main__":
@@ -194,8 +186,18 @@ if __name__ == "__main__":
         args = parser.parse_args()
 
         db.initialise_db("hangmandb.sqlite")
-
         game = HangmanGame("kot", *args.player)
         game.run_game()
-        print("\nGame stats:\n", game.guessed_chars)
-        print("\nGame results:\n", game.results)
+
+        last_game_num = db.take_last_game_number("hangmandb.sqlite")
+        game_stats = game.get_game_stats()
+
+        for player in args.player:
+            for game_round in game_stats[player].keys():
+                db.update_db("hangmandb.sqlite",
+                             last_game_num + 1,
+                             winner=game.winner,
+                             round_it=game_round,
+                             name=player,
+                             guess=game_stats[player][game_round]
+                             )
