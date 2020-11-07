@@ -7,7 +7,7 @@ class DbInterface:
         conn = sqlite3.connect(dbname)
         try:
             conn.cursor().execute("""CREATE TABLE stats (game_id INTEGER, 
-            game_round_id INTEGER, player TEXT, guess TEXT, winner TEXT)""")
+            round_id INTEGER, player TEXT, guess TEXT, winner TEXT)""")
         except sqlite3.OperationalError as err:
             if err == "table stats already exists":
                 pass
@@ -30,8 +30,6 @@ class DbInterface:
         except KeyError as err:
             print(err)
         if t1:
-            print(t1)
-            print(*t1)
             c.execute("INSERT INTO stats VALUES (?,?,?,?,?)", t1)
             conn.commit()
         conn.close()
