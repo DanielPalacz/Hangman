@@ -43,3 +43,14 @@ class GameDbInterface(DbConnection):
             c.execute("INSERT INTO stats VALUES (?,?,?,?,?)", t1)
             conn.commit()
         conn.close()
+
+    def show_all_rows(dbname: str) -> None:
+        conn = GameDbInterface.create_connection(dbname)
+        c = conn.cursor()
+        c.execute("PRAGMA table_info(stats)")
+        stats_table_columns = [x[1] for x in c.fetchall()]
+        print(stats_table_columns)
+        c.execute("SELECT * FROM stats")
+        for row in c.fetchall():
+            print(row)
+        conn.close()

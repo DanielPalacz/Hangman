@@ -171,14 +171,16 @@ if __name__ == "__main__":
     if len(sys.argv) == 1:
         print(__doc__)
         exit()
-    elif len(sys.argv) == 2 and ("-h" or "--help" in sys.argv):
-        print(__doc__)
-        exit()
     elif "-demo" in sys.argv and len(sys.argv) == 2:
         gamers = ["Janek", "Tomek"]
         game = HangmanGame("kot", *gamers)
         game.run_game()
         print("\nGame stats:\n", game.guessed_chars)
+        exit()
+    elif "-history" in sys.argv and len(sys.argv) == 2:
+        db.show_all_rows("hangmandb.sqlite")
+    elif ("-h" or "--help" in sys.argv) and len(sys.argv) == 2:
+        print(__doc__)
         exit()
     else:
         parser = argparse.ArgumentParser()
@@ -194,9 +196,13 @@ if __name__ == "__main__":
 
         for player in args.player:
             for game_round in game_stats[player].keys():
+                if game_stats[player][game_round] != game.guessed_word:
+                    winner = None
+                else:
+                    winner = game.winner
                 db.update_db("hangmandb.sqlite",
                              last_game_num + 1,
-                             winner=game.winner,
+                             winner=winner,
                              round_it=game_round,
                              name=player,
                              guess=game_stats[player][game_round]
