@@ -39,12 +39,10 @@ class HangmanPlayer:
                 char_input = inputimeout(prompt="\nProvide single character "
                                                 "(in 5 seconds): ", timeout=5)
             except TimeoutOccurred:
-                char_input = None
+                return None
 
             if len(char_input) == 1:
                 break
-            elif len(char_input) == 0:
-                return char_input
             else:
                 print("Please enter only one character")
 
@@ -130,6 +128,12 @@ class HangmanGame:
         self.winner = the_player
         self.round_number += 1
         self.results[the_player][self.round_number] = self.guessed_word
+        db.update_db("hangmandb.sqlite",
+                     winner=self.winner,
+                     round_it=self.round_number,
+                     name=the_player,
+                     guess=self.guessed_word,
+                     )
 
     def run_game(self):
         """Runs Hangman game."""
