@@ -32,7 +32,7 @@ class HangmanPlayer:
     def provide_character(self):
         """Implements providing character by the player.
 
-        Player hs 5 seconds to provide character.
+        Player has 5 seconds to provide character.
         """
         while True:
             try:
