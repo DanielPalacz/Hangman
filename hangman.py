@@ -30,7 +30,7 @@ class HangmanPlayer:
     """
 
     def __init__(self, name: str) -> None:
-        """Inits HangmanPlayer object with name."""
+        """Inits HangmanPlayer object."""
         self.name = name
 
     def provide_character(self):
