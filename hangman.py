@@ -29,11 +29,11 @@ class HangmanPlayer:
             - name of the player
     """
 
-    def __init__(self, name: str) -> None:
+    def __init__(self, name: str):
         """Inits HangmanPlayer object."""
         self.name = name
 
-    def provide_character(self):
+    def provide_character(self) -> str:
         """Implements providing character by the player.
 
         Player has 5 seconds to provide character.
@@ -46,7 +46,7 @@ class HangmanPlayer:
                 char_input = inputimeout(prompt="\nProvide single character "
                                                 "(in 5 seconds): ", timeout=t)
             except TimeoutOccurred:
-                return None
+                return ""
 
             if len(char_input) == 1:
                 break
@@ -58,7 +58,7 @@ class HangmanPlayer:
 
         return char_input
 
-    def guess_word(self):
+    def guess_word(self) -> str:
         """Implements guessing word by the player.
 
         Player has 10 seconds to guess the word.
@@ -90,8 +90,8 @@ class HangmanGame:
             - number tracking rounds of the game
     """
 
-    def __init__(self, guessed_word, *gamers):
-        """Initializes HangmanGame object
+    def __init__(self, guessed_word: str, *gamers: HangmanPlayer):
+        """Initializes HangmanGame object.
 
         Args:
             - guessed_word
@@ -104,7 +104,6 @@ class HangmanGame:
         self.players = [HangmanPlayer(gamer) for gamer in gamers]
         self.winner = None
         self.round_number = 0
-        self.results = {gamer: dict() for gamer in gamers}
 
     def __str__(self):
         return "Hello it is __str__ (special method) output of: " \
@@ -131,15 +130,17 @@ class HangmanGame:
         self.guessing_state = "".join([c1 if c1 in self.guessed_chars else "*"
                                        for c1 in self.guessed_word])
 
-    def end_game(self, the_player):
+    def end_game(self, the_player, storage):
         print("Super!", the_player, "- you guessed the word:",
               self.guessed_word)
         self.guessing_state = self.guessed_word
         self.winner = the_player
         self.round_number += 1
-        self.results[the_player][self.round_number] = self.guessed_word
+        storage.update_game_actions_storage(the_player,
+                                            self.round_number,
+                                            self.guessed_word)
 
-    def run_game(self):
+    def run_game(self, storage):
         """Runs Hangman game."""
 
         print("***********************************************************\n")
@@ -147,34 +148,56 @@ class HangmanGame:
 
         while not self.is_finished():
 
-            for player in self.players:
+            for player_obj in self.players:
                 if self.is_finished():
                     break
-                print("\n" + player.name, "- it is your turn.")
+                print("\n" + player_obj.name, "- it is your turn.")
                 print("The state of game is following:", self.guessing_state)
 
-                self.update_game_state(player.provide_character())
+                self.update_game_state(player_obj.provide_character())
                 if self.is_finished():
-                    self.end_game(player.name)
+                    self.end_game(player_obj.name, storage)
                     break
 
                 print("\nThe state of game is following:", self.guessing_state)
-                guess_try = player.guess_word()
+                guess_try = player_obj.guess_word()
                 if guess_try == self.guessed_word:
-                    self.end_game(player.name)
+                    self.end_game(player_obj.name, storage)
                     break
                 else:
                     print("\nUnfortunately you did not guess.\n\n")
 
                 self.round_number += 1
-                self.results[player.name][self.round_number] = guess_try
-
+                storage.update_game_actions_storage(player_obj.name,
+                                                    self.round_number,
+                                                    guess_try)
         else:
             print("\nIt is end of Hangman Game number XYZ. "
                   "Thank You!", self.winner, "won in round", self.round_number)
 
-    def get_all_game_input_actions(self):
-        return self.results
+
+class GameActionsStorage:
+    """Class implements storing/getting all game actions.
+
+    Attributes:
+        storage:
+            - data structure stores all game actions.
+              It is done by by executing the Class method:
+              update_game_actions_storage(...)
+
+    Methods:
+        update_game_actions_storage(self, gamer, round_id, guess_try)
+             - Method stores input for the given round of game.
+        """
+
+    def __init__(self, *gamers):
+        self.storage = {gamer: dict() for gamer in gamers}
+
+    def update_game_actions_storage(self, gamer, round_id, guess_try):
+        self.storage[gamer][round_id] = guess_try
+
+    def get_all_game_actions(self):
+        return self.storage
 
 
 if __name__ == "__main__":
@@ -185,37 +208,43 @@ if __name__ == "__main__":
                         help="show all historical results")
     parser.add_argument("--documentation", action="store_true",
                         help="show module documentation")
+    parser.add_argument("--dbname", default="hangmandb.sqlite",
+                        help="defines Sqlite3 file DB to store game actions")
 
     args = parser.parse_args()
 
-    print(args)
-
+    # Additional printing features:
     if args.documentation:
         print(__doc__)
         exit()
-
     if args.history:
         DB.show_all_rows("hangmandb.sqlite")
         exit()
 
-    DB.initialise_db("hangmandb.sqlite")
-
+    # Objects initialisation / game starting:
+    dbname = args.dbname + ".sqlite"
+    DB.initialise_db(dbname)
+    game_local_storage = GameActionsStorage(*args.player)
     game = HangmanGame("kot", *args.player)
-    game.run_game()
 
-    last_game_num = DB.get_last_game_id("hangmandb.sqlite")
-    game_stats = game.get_all_game_input_actions()
+    # trigger the game and because of game_local_storage object passing,
+    # the game object stores actions outside of itself in game_local_storage
+    # It is implemented in run_game(...) method
+    game.run_game(game_local_storage)
+
+    last_game_num = DB.get_last_game_id(dbname)
+    game_actions = game_local_storage.get_all_game_actions()
 
     for player in args.player:
-        for game_round in game_stats[player].keys():
-            if game_stats[player][game_round] != game.guessed_word:
+        for game_round in game_actions[player].keys():
+            if game_actions[player][game_round] != game.guessed_word:
                 winner = None
             else:
                 winner = game.winner
-            DB.update_db("hangmandb.sqlite",
+            DB.update_db(dbname,
                          last_game_num + 1,
                          winner=winner,
-                         current_round_id=game_round,
+                         game_round_id=game_round,
                          name=player,
-                         guess=game_stats[player][game_round]
+                         guess=game_actions[player][game_round]
                          )

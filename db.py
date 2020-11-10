@@ -36,7 +36,7 @@ class DB(DbConnection):
         conn = DB.create_connection(dbname)
         c = conn.cursor()
         try:
-            t1 = (g_num, kw["current_round_id"], kw["name"], kw["guess"], winner)
+            t1 = (g_num, kw["game_round_id"], kw["name"], kw["guess"], winner)
         except KeyError as err:
             print(err)
         if t1:
