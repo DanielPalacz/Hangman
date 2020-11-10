@@ -12,10 +12,10 @@ class DbConnection:
         return conn
 
 
-class GameDbInterface(DbConnection):
+class DB(DbConnection):
 
     def initialise_db(dbname: str) -> None:
-        conn = GameDbInterface.create_connection(dbname)
+        conn = DB.create_connection(dbname)
         try:
             conn.cursor().execute("""CREATE TABLE stats (game_id INTEGER, 
             round_id INTEGER, player TEXT, guess TEXT, winner TEXT)""")
@@ -24,8 +24,8 @@ class GameDbInterface(DbConnection):
                 pass
         conn.close()
 
-    def take_last_game_number(dbname: str) -> int:
-        conn = GameDbInterface.create_connection(dbname)
+    def get_last_game_id(dbname: str) -> int:
+        conn = DB.create_connection(dbname)
         c = conn.cursor()
         c.execute("SELECT max(game_id) FROM stats")
         game_number = c.fetchone()[0] or 0
@@ -33,10 +33,10 @@ class GameDbInterface(DbConnection):
         return game_number
 
     def update_db(dbname: str, g_num, winner: str = None, **kw) -> None:
-        conn = GameDbInterface.create_connection(dbname)
+        conn = DB.create_connection(dbname)
         c = conn.cursor()
         try:
-            t1 = (g_num, kw["round_it"], kw["name"], kw["guess"], winner)
+            t1 = (g_num, kw["current_round_id"], kw["name"], kw["guess"], winner)
         except KeyError as err:
             print(err)
         if t1:
@@ -45,7 +45,7 @@ class GameDbInterface(DbConnection):
         conn.close()
 
     def show_all_rows(dbname: str) -> None:
-        conn = GameDbInterface.create_connection(dbname)
+        conn = DB.create_connection(dbname)
         c = conn.cursor()
         c.execute("PRAGMA table_info(stats)")
         stats_table_columns = [x[1] for x in c.fetchall()]

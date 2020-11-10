@@ -18,7 +18,7 @@ Usage:
 from inputimeout import inputimeout, TimeoutOccurred
 import time
 import argparse
-from dbsupport import GameDbInterface as db
+from db import DB
 
 
 class HangmanPlayer:
@@ -173,12 +173,12 @@ class HangmanGame:
             print("\nIt is end of Hangman Game number XYZ. "
                   "Thank You!", self.winner, "won in round", self.round_number)
 
-    def get_game_stats(self):
+    def get_all_game_input_actions(self):
         return self.results
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Hangman Game help")
+    parser = argparse.ArgumentParser(description="Hangman Game edu project.")
     parser.add_argument("-p", "--player", action="append", default=[],
                         help="create Hangman Player")
     parser.add_argument("--history", action="store_true",
@@ -188,25 +188,23 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    if len(args.player) == 0:
-        print("Script should be run with proper arguments.")
-        exit()
+    print(args)
 
     if args.documentation:
         print(__doc__)
         exit()
 
     if args.history:
-        db.show_all_rows("hangmandb.sqlite")
+        DB.show_all_rows("hangmandb.sqlite")
         exit()
 
-    db.initialise_db("hangmandb.sqlite")
+    DB.initialise_db("hangmandb.sqlite")
 
     game = HangmanGame("kot", *args.player)
     game.run_game()
 
-    last_game_num = db.take_last_game_number("hangmandb.sqlite")
-    game_stats = game.get_game_stats()
+    last_game_num = DB.get_last_game_id("hangmandb.sqlite")
+    game_stats = game.get_all_game_input_actions()
 
     for player in args.player:
         for game_round in game_stats[player].keys():
@@ -214,10 +212,10 @@ if __name__ == "__main__":
                 winner = None
             else:
                 winner = game.winner
-            db.update_db("hangmandb.sqlite",
+            DB.update_db("hangmandb.sqlite",
                          last_game_num + 1,
                          winner=winner,
-                         round_it=game_round,
+                         current_round_id=game_round,
                          name=player,
                          guess=game_stats[player][game_round]
                          )
