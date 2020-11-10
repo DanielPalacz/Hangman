@@ -172,42 +172,45 @@ class HangmanGame:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) == 1:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-p", "--player", action="append", default=[],
+                        help="create Hangman Player")
+    parser.add_argument("--history", action="store_true",
+                        help="show all historical results")
+    parser.add_argument("--documentation", action="store_true",
+                        help="show module documentation")
+
+    args = parser.parse_args()
+
+    if args.documentation:
         print(__doc__)
         exit()
-    elif "-demo" in sys.argv and len(sys.argv) == 2:
-        gamers = ["Janek", "Tomek"]
-        game = HangmanGame("kot", *gamers)
-        game.run_game()
-        print("\nGame stats:\n", game.guessed_chars)
-        exit()
-    elif "-history" in sys.argv and len(sys.argv) == 2:
+
+    if args.history:
         db.show_all_rows("hangmandb.sqlite")
-    elif ("-h" or "--help" in sys.argv) and len(sys.argv) == 2:
-        print(__doc__)
         exit()
-    else:
-        parser = argparse.ArgumentParser()
-        parser.add_argument("-p", "--player", action="append", default=[])
-        args = parser.parse_args()
 
-        db.initialise_db("hangmandb.sqlite")
-        game = HangmanGame("kot", *args.player)
-        game.run_game()
+    if args.history:
+        db.show_all_rows("hangmandb.sqlite")
+        exit()
 
-        last_game_num = db.take_last_game_number("hangmandb.sqlite")
-        game_stats = game.get_game_stats()
+    db.initialise_db("hangmandb.sqlite")
+    game = HangmanGame("kot", *args.player)
+    game.run_game()
 
-        for player in args.player:
-            for game_round in game_stats[player].keys():
-                if game_stats[player][game_round] != game.guessed_word:
-                    winner = None
-                else:
-                    winner = game.winner
-                db.update_db("hangmandb.sqlite",
-                             last_game_num + 1,
-                             winner=winner,
-                             round_it=game_round,
-                             name=player,
-                             guess=game_stats[player][game_round]
-                             )
+    last_game_num = db.take_last_game_number("hangmandb.sqlite")
+    game_stats = game.get_game_stats()
+
+    for player in args.player:
+        for game_round in game_stats[player].keys():
+            if game_stats[player][game_round] != game.guessed_word:
+                winner = None
+            else:
+                winner = game.winner
+            db.update_db("hangmandb.sqlite",
+                         last_game_num + 1,
+                         winner=winner,
+                         round_it=game_round,
+                         name=player,
+                         guess=game_stats[player][game_round]
+                         )
