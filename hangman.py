@@ -16,7 +16,7 @@ Usage:
 """
 
 from inputimeout import inputimeout, TimeoutOccurred
-import sys
+import time
 import argparse
 from dbsupport import GameDbInterface as db
 
@@ -38,17 +38,23 @@ class HangmanPlayer:
 
         Player has 5 seconds to provide character.
         """
+        t_start = time.time()
+        t_delta = 0
         while True:
+            t = 5 - t_delta
             try:
                 char_input = inputimeout(prompt="\nProvide single character "
-                                                "(in 5 seconds): ", timeout=5)
+                                                "(in 5 seconds): ", timeout=t)
             except TimeoutOccurred:
                 return None
 
             if len(char_input) == 1:
                 break
             else:
-                print("Please enter only one character")
+                print("Please enter one character.")
+
+            t_end = time.time()
+            t_delta = t_end - t_start
 
         return char_input
 
@@ -172,7 +178,7 @@ class HangmanGame:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description="Hangman Game help")
     parser.add_argument("-p", "--player", action="append", default=[],
                         help="create Hangman Player")
     parser.add_argument("--history", action="store_true",
@@ -182,6 +188,10 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    if len(args.player) == 0:
+        print("Script should be run with proper arguments.")
+        exit()
+
     if args.documentation:
         print(__doc__)
         exit()
@@ -190,11 +200,8 @@ if __name__ == "__main__":
         db.show_all_rows("hangmandb.sqlite")
         exit()
 
-    if args.history:
-        db.show_all_rows("hangmandb.sqlite")
-        exit()
-
     db.initialise_db("hangmandb.sqlite")
+
     game = HangmanGame("kot", *args.player)
     game.run_game()
 
