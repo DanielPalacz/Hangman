@@ -247,15 +247,17 @@ if __name__ == "__main__":
     game.run_game(game_actions_storage)
 
     # when game is ended:
-    game_actions = game_actions_storage.get_all_game_actions()
     # getting all game actions data structure
-    last_game_id = db.get_last_game_id(c)
+    game_actions = game_actions_storage.get_all_game_actions()
+    #
     # getting last game_id from db
-    # ??? it is conceptual issue, because game_id depend on DBNAME
-    # ??? it doesnt have have sense when we use more than 1 db.
-    # --- > lets omit this "issue" for now
+    # ? it looks like conceptual issue, because game_id depend on DBNAME
+    # ? the param doesnt have sense when we use more than 1 db --> ignore it
+    last_game_id = db.get_last_game_id(c)
 
-    for player in args.player:
+    # mechanism for updating DB with game actions
+    # to re-think how to simplify it
+    for player in game_actions:
         for game_round in game_actions[player].keys():
             if game_actions[player][game_round] != game.guessed_word:
                 winner = None
@@ -268,5 +270,6 @@ if __name__ == "__main__":
                          name=player,
                          guess=game_actions[player][game_round]
                          )
+
     conn.commit()
     conn.close()
