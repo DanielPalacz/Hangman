@@ -212,7 +212,7 @@ if __name__ == "__main__":
                         help="show module documentation")
     parser.add_argument("--nodb", action="store_true",
                         help="Game results are not written to db")
-    parser.add_argument("--dbname", default="hangmandb.sqlite",
+    parser.add_argument("--dbname", default="hangmandb",
                         help="defines Sqlite3 file DB to store game actions")
     args = parser.parse_args()
 
@@ -248,9 +248,9 @@ if __name__ == "__main__":
 
     # when game is ended:
     game_actions = game_actions_storage.get_all_game_actions()
-    # 1. getting all game actions` data structure
-    last_game_num = db.get_last_game_id(dbname)
-    # 2. getting last game_id from db
+    # getting all game actions data structure
+    last_game_id = db.get_last_game_id(c)
+    # getting last game_id from db
     # ??? it is conceptual issue, because game_id depend on DBNAME
     # ??? it doesnt have have sense when we use more than 1 db.
     # --- > lets omit this "issue" for now
@@ -261,8 +261,8 @@ if __name__ == "__main__":
                 winner = None
             else:
                 winner = game.winner
-            db.update_db(dbname,
-                         last_game_num + 1,
+            db.update_db(c,
+                         last_game_id + 1,
                          winner=winner,
                          game_round_id=game_round,
                          name=player,
