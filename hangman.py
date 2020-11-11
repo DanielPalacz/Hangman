@@ -18,7 +18,8 @@ Usage:
 from inputimeout import inputimeout, TimeoutOccurred
 import time
 import argparse
-from db import DB
+import db
+import sqlite3
 
 
 class HangmanPlayer:
@@ -201,39 +202,58 @@ class GameActionsStorage:
 
 
 if __name__ == "__main__":
+    # Setting-up script input parameters
     parser = argparse.ArgumentParser(description="Hangman Game edu project.")
     parser.add_argument("-p", "--player", action="append", default=[],
-                        help="create Hangman Player")
+                        help="Create Hangman Player")
     parser.add_argument("--history", action="store_true",
                         help="show all historical results")
     parser.add_argument("--documentation", action="store_true",
                         help="show module documentation")
+    parser.add_argument("--nodb", action="store_true",
+                        help="Game results are not written to db")
     parser.add_argument("--dbname", default="hangmandb.sqlite",
                         help="defines Sqlite3 file DB to store game actions")
-
     args = parser.parse_args()
 
-    # Additional printing features:
+    # Additional printing documentation feature:
     if args.documentation:
         print(__doc__)
         exit()
-    if args.history:
-        DB.show_all_rows("hangmandb.sqlite")
-        exit()
 
-    # Objects initialisation / game starting:
-    dbname = args.dbname + ".sqlite"
-    DB.initialise_db(dbname)
-    game_local_storage = GameActionsStorage(*args.player)
+    # Initial players check:
+    if not args.player:
+        print("You havent`t specified any player.\n")
+        answer = input("Would like to play in single mode as John? "
+                       "Type 'ok' if yes. ")
+        if answer == "ok":
+            args.player.append("John")
+        else:
+            print("You don`t want to play as 'John'. Quitting...")
+            exit()
+
+    # DB related Objects initializing
+    if args.nodb:
+        dbname = ":memory:"
+    else:
+        dbname = args.dbname + ".sqlite"
+    conn = sqlite3.connect(dbname)
+    c = conn.cursor()
+    db.initialize_db(c)
+
+    # Game related Objects initializing, triggering the game
+    game_actions_storage = GameActionsStorage(*args.player)
     game = HangmanGame("kot", *args.player)
+    game.run_game(game_actions_storage)
 
-    # trigger the game and because of game_local_storage object passing,
-    # the game object stores actions outside of itself in game_local_storage
-    # It is implemented in run_game(...) method
-    game.run_game(game_local_storage)
-
-    last_game_num = DB.get_last_game_id(dbname)
-    game_actions = game_local_storage.get_all_game_actions()
+    # when game is ended:
+    game_actions = game_actions_storage.get_all_game_actions()
+    # 1. getting all game actions` data structure
+    last_game_num = db.get_last_game_id(dbname)
+    # 2. getting last game_id from db
+    # ??? it is conceptual issue, because game_id depend on DBNAME
+    # ??? it doesnt have have sense when we use more than 1 db.
+    # --- > lets omit this "issue" for now
 
     for player in args.player:
         for game_round in game_actions[player].keys():
@@ -241,10 +261,12 @@ if __name__ == "__main__":
                 winner = None
             else:
                 winner = game.winner
-            DB.update_db(dbname,
+            db.update_db(dbname,
                          last_game_num + 1,
                          winner=winner,
                          game_round_id=game_round,
                          name=player,
                          guess=game_actions[player][game_round]
                          )
+    conn.commit()
+    conn.close()
