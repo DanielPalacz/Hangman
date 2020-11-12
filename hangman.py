@@ -232,6 +232,12 @@ if __name__ == "__main__":
             print("You don`t want to play as 'John'. Quitting...")
             exit()
 
+    # Game related Objects initializing, triggering the game
+    game_actions_storage = GameActionsStorage(*args.player)
+    game = HangmanGame("kot", *args.player)
+    game.run_game(game_actions_storage)
+
+    # Rest of code is DB related
     # DB related Objects initializing
     if args.nodb:
         dbname = ":memory:"
@@ -239,17 +245,14 @@ if __name__ == "__main__":
         dbname = args.dbname + ".sqlite"
     conn = sqlite3.connect(dbname)
     c = conn.cursor()
-    db.initialize_db(c)
-
-    # Game related Objects initializing, triggering the game
-    game_actions_storage = GameActionsStorage(*args.player)
-    game = HangmanGame("kot", *args.player)
-    game.run_game(game_actions_storage)
+    #
+    if not db.initialize_db(c):
+        exit()
 
     # when game is ended:
     # getting all game actions data structure
     game_actions = game_actions_storage.get_all_game_actions()
-    #
+
     # getting last game_id from db
     # ? it looks like conceptual issue, because game_id depend on DBNAME
     # ? the param doesnt have sense when we use more than 1 db --> ignore it

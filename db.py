@@ -2,9 +2,19 @@ from sqlite3 import Cursor
 from sqlite3 import OperationalError
 
 
-def initialize_db(c: Cursor) -> bool:
+sql_create_table_stats = """CREATE TABLE IF NOT EXISTS stats (
+game_id INTEGER,
+round_id INTEGER,
+player TEXT,
+guess TEXT,
+winner TEXT)"""
+
+sql_insert_into_stats = "INSERT INTO stats VALUES (?, ?,?,?,?)"
+
+
+def initialize_db(c: Cursor):
     try:
-        c.execute("""CREATE TABLE stats (game_id INTEGER,round_id INTEGER, player TEXT, guess TEXT, winner TEXT)""")
+        c.execute(sql_create_table_stats)
         return True
     except OperationalError as err:
         print("The issue with DB initializing happened:", err)
@@ -24,7 +34,7 @@ def update_db(c: Cursor, g_num, winner: str = None, **kw) -> bool:
         print(err)
         return False
     if t1:
-        c.execute("INSERT INTO stats VALUES (?,?,?,?,?)", t1)
+        c.execute(sql_insert_into_stats, t1)
         return True
 
 
@@ -33,4 +43,6 @@ def get_all_rows(c: Cursor) -> None:
     stats_table_columns = [x[1] for x in c.fetchall()]
     c.execute("SELECT * FROM stats")
     for row in c.fetchall():
-        print(row)
+        stats_table_columns.append(row)
+
+    return stats_table_columns
