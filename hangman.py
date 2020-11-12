@@ -192,13 +192,13 @@ class GameActionsStorage:
         """
 
     def __init__(self, *gamers):
-        self.storage = {gamer: dict() for gamer in gamers}
+        self.__storage = {gamer: dict() for gamer in gamers}
 
     def update_game_actions_storage(self, gamer, round_id, guess_try):
-        self.storage[gamer][round_id] = guess_try
+        self.__storage[gamer][round_id] = guess_try
 
     def get_all_game_actions(self):
-        return self.storage
+        return self.__storage
 
 
 if __name__ == "__main__":
